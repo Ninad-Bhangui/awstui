@@ -1,11 +1,14 @@
 package aws
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/go-ini/ini"
 )
 
@@ -17,8 +20,51 @@ type Profile struct {
 	IsFromEnv bool
 }
 
-// GetProfiles returns a list of available AWS profiles from both config and credentials files
-func GetProfiles() ([]Profile, error) {
+// ProfileManager handles AWS profile operations
+type ProfileManager struct {
+	profiles []Profile
+}
+
+// NewProfileManager creates a new profile manager
+func NewProfileManager() *ProfileManager {
+	return &ProfileManager{}
+}
+
+// LoadProfiles loads all available AWS profiles
+func (pm *ProfileManager) LoadProfiles() error {
+	profiles, err := loadProfiles()
+	if err != nil {
+		return err
+	}
+	pm.profiles = profiles
+	return nil
+}
+
+// GetAllProfiles returns all loaded profiles
+func (pm *ProfileManager) GetAllProfiles() []Profile {
+	return pm.profiles
+}
+
+// LoadConfig loads AWS config for a specific profile
+func (pm *ProfileManager) LoadConfig(ctx context.Context, profileName string) (config.Config, error) {
+	// Validate profile exists
+	var found bool
+	for _, p := range pm.profiles {
+		if p.Name == profileName {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return aws.Config{}, errors.New("profile not found")
+	}
+
+	// Load AWS config
+	return config.LoadDefaultConfig(ctx, config.WithSharedConfigProfile(profileName))
+}
+
+// loadProfiles returns a list of available AWS profiles from both config and credentials files
+func loadProfiles() ([]Profile, error) {
 	var profiles []Profile
 	homeDir, err := os.UserHomeDir()
 	if err != nil {

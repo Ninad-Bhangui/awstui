@@ -52,8 +52,10 @@ aws_secret_access_key = staging_secret
 		os.Setenv("HOME", tmpDir)
 		defer os.Setenv("HOME", originalHome)
 
-		profiles, err := GetProfiles()
+		pm := NewProfileManager()
+		err := pm.LoadProfiles()
 		assert.NoError(t, err)
+		profiles := pm.GetAllProfiles()
 
 		// Should find 4 unique profiles: default, dev, prod, staging
 		assert.Equal(t, 4, len(profiles))
@@ -92,8 +94,10 @@ aws_secret_access_key = staging_secret
 			os.Setenv("AWS_PROFILE", originalProfile)
 		}()
 
-		profiles, err := GetProfiles()
+		pm := NewProfileManager()
+		err := pm.LoadProfiles()
 		assert.NoError(t, err)
+		profiles := pm.GetAllProfiles()
 
 		// Verify dev profile is marked as from env
 		var devProfile Profile
