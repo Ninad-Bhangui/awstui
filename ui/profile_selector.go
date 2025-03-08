@@ -18,7 +18,7 @@ type ProfileSelector struct {
 }
 
 // NewProfileSelector creates a new profile selection screen
-func NewProfileSelector(app *tview.Application, onSelect func(aws.Profile, config.Config)) *ProfileSelector {
+func NewProfileSelector(onSelect func(aws.Profile, config.Config)) *ProfileSelector {
 	selector := &ProfileSelector{
 		List:       tview.NewList(),
 		profileMgr: aws.NewProfileManager(),

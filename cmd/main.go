@@ -11,19 +11,32 @@ import (
 func main() {
 	app := tview.NewApplication()
 
+	// Create main layout
+	layout := ui.NewLayout()
+
 	// Create a function to handle profile selection
 	onProfileSelect := func(profile aws.Profile, cfg config.Config) {
-		app.Stop()
+		// Create and show home page
+		homePage := ui.NewHomePage(profile, cfg)
+		layout.SetContent(homePage)
+		layout.SetContext(profile.Name)   // Show active profile in context
+		layout.SetKeybindings("<q> Quit") // Update keybindings for home page
+		app.SetFocus(homePage)
 	}
 
 	// Create profile selector
-	profileSelector := ui.NewProfileSelector(app, onProfileSelect)
+	profileSelector := ui.NewProfileSelector(onProfileSelect)
 	if err := profileSelector.LoadProfiles(); err != nil {
 		panic(err)
 	}
 
-	// Handle Esc/q to quit
-	profileSelector.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	// Set initial content and header
+	layout.SetContent(profileSelector)
+	layout.SetContext("Select AWS Profile")
+	layout.SetKeybindings("<↑/↓> Navigate • <Enter> Select • <Esc/q> Quit")
+
+	// Handle global input
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyEscape:
 			app.Stop()
@@ -37,7 +50,7 @@ func main() {
 		return event
 	})
 
-	if err := app.SetRoot(profileSelector, true).Run(); err != nil {
+	if err := app.SetRoot(layout, true).EnableMouse(true).Run(); err != nil {
 		panic(err)
 	}
 }
