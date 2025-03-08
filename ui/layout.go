@@ -8,14 +8,15 @@ import (
 // Layout represents the main application layout
 type Layout struct {
 	*tview.Grid
-	header      *tview.Flex
-	context     *tview.TextView
-	keybindings *tview.TextView
-	content     tview.Primitive
-	statusBar   *tview.TextView
-	helpPanel   *tview.TextView
-	app         *tview.Application
-	showHelp    bool
+	header          *tview.Flex
+	context         *tview.TextView
+	keybindings     *tview.TextView
+	content         tview.Primitive
+	previousContent tview.Primitive // Store previous content when showing help
+	statusBar       *tview.TextView
+	helpPanel       *tview.TextView
+	app             *tview.Application
+	showHelp        bool
 }
 
 // NewLayout creates a new application layout
@@ -55,6 +56,8 @@ func NewLayout(app *tview.Application) *Layout {
 [::b]Navigation Keys[::-]
   ↑/k         : Move up
   ↓/j         : Move down
+  ←/h         : Move left/back
+  →/l         : Move right/forward
   Enter       : Select item
   
 [::b]General Commands[::-]
@@ -67,7 +70,7 @@ func NewLayout(app *tview.Application) *Layout {
   3           : Lambda Functions
 
 [::b]Tips[::-]
-  • Use vim-style navigation (j/k) for faster movement
+  • Use vim-style navigation (hjkl) for faster movement
   • Press ? again to return to previous screen
   • More features coming soon!`)
 
@@ -80,12 +83,26 @@ func NewLayout(app *tview.Application) *Layout {
 	layout.Grid.AddItem(layout.header, 0, 0, 1, 1, 0, 0, false)
 	layout.Grid.AddItem(layout.statusBar, 2, 0, 1, 1, 0, 0, false)
 
-	// Set up input capture for help toggle
+	// Set up input capture for help toggle and vim navigation
 	layout.Grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		// Handle help toggle
 		if event.Rune() == '?' {
 			layout.ToggleHelp()
 			return nil
 		}
+
+		// Handle vim-style navigation
+		switch event.Rune() {
+		case 'j':
+			return tcell.NewEventKey(tcell.KeyDown, 0, tcell.ModNone)
+		case 'k':
+			return tcell.NewEventKey(tcell.KeyUp, 0, tcell.ModNone)
+		case 'h':
+			return tcell.NewEventKey(tcell.KeyLeft, 0, tcell.ModNone)
+		case 'l':
+			return tcell.NewEventKey(tcell.KeyRight, 0, tcell.ModNone)
+		}
+
 		return event
 	})
 
@@ -123,15 +140,18 @@ func (l *Layout) SetStatus(text string) {
 func (l *Layout) ToggleHelp() {
 	l.showHelp = !l.showHelp
 	if l.showHelp {
-		// Show help panel
+		// Store current content and show help panel
+		l.previousContent = l.content
 		l.SetContent(l.helpPanel)
 		l.SetContext("Help")
 		l.SetKeybindings("<?> Back")
 		l.SetStatus("Viewing help")
 	} else {
-		// Return to previous content
-		l.SetContent(l.content)
-		l.app.SetFocus(l.content)
+		// Return to previous content if it exists
+		if l.previousContent != nil {
+			l.SetContent(l.previousContent)
+			l.app.SetFocus(l.previousContent)
+		}
 	}
 }
 
