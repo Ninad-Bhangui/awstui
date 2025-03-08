@@ -12,15 +12,16 @@ func main() {
 	app := tview.NewApplication()
 
 	// Create main layout
-	layout := ui.NewLayout()
+	layout := ui.NewLayout(app)
 
 	// Create a function to handle profile selection
 	onProfileSelect := func(profile aws.Profile, cfg config.Config) {
 		// Create and show home page
 		homePage := ui.NewHomePage(profile, cfg)
 		layout.SetContent(homePage)
-		layout.SetContext(profile.Name)   // Show active profile in context
-		layout.SetKeybindings("<q> Quit") // Update keybindings for home page
+		layout.SetContext(profile.Name)              // Show active profile in context
+		layout.SetKeybindings("<q> Quit • <?> Help") // Update keybindings for home page
+		layout.SetStatus("Profile loaded: " + profile.Name)
 		app.SetFocus(homePage)
 	}
 
@@ -33,7 +34,8 @@ func main() {
 	// Set initial content and header
 	layout.SetContent(profileSelector)
 	layout.SetContext("Select AWS Profile")
-	layout.SetKeybindings("<↑/↓> Navigate • <Enter> Select • <Esc/q> Quit")
+	layout.SetKeybindings("<↑/↓> Navigate • <Enter> Select • <Esc/q> Quit • <?> Help")
+	layout.SetStatus("Ready")
 
 	// Handle global input
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
